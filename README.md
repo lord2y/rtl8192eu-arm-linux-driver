@@ -32,9 +32,7 @@ You can see the applied patches, their sources and/or motivation by looking at t
     
 If you wish to uninstall the driver at a later point, use
 
-    ```shell
-    # make uninstall
-    ```    
+    # make uninstall  
 
 ## Building and installing using DKMS
 
@@ -60,19 +58,15 @@ that it can used to rebuild the module on kernel upgrades.
 
     ```shell
     # dkms install rtl8192eu/1.0
-    ```
+    ```  
 
 If you wish to uninstall the driver at a later point, use
 
-    ```shell
-    # dkms uninstall rtl8192eu/1.0
-    ```
+    # dkms uninstall rtl8192eu/1.0  
 
 To completely remove the driver from DKMS use
 
-    ```shell
-    # dkms remove rtl8192eu/1.0 --all
-    ```
+    # dkms remove rtl8192eu/1.0 --all  
 
 ## Submitting patches
 
