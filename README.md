@@ -1,4 +1,4 @@
-# rtl8192eu linux drivers
+# RTL8192eu linux drivers for Raspberry Pi
 
 The official drivers for D-Link DWA-131 Rev E, with patches to keep it working on newer kernels on Raspberry Pi.  
 Also works on Rosewill RNX-N180UBE v2 N300 Wireless Adapter.
