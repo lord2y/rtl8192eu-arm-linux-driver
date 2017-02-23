@@ -10,7 +10,31 @@ Kudos to ``Magnus Bergmark <magnus.bergmark@gmail.com>`` for the great work.
 
 You can see the applied patches, their sources and/or motivation by looking at the commits. The `master` branch will mostly be kept clean with a single commit per patch, except for Pull Requests. You can review commit by commit and then record the SHA in order to get a safe reference to use. As long as the SHA stays the same you know that what you get has been reviewed by you.
 
-Note that updates to this README will show up as separate commits. I will not mix changes to this file with changes to the code in case you want to mirror this without the README.
+## Building and installing using source code
+
+1. Install DKMS and other required tools
+
+    ```shell
+    # apt-get install git raspberrypi-kernel-headers build-essential dkms
+    ```
+
+2. Compile driver
+
+    ```shell
+    # make ARCH=arm
+    ```
+
+3. Install the driver
+
+    ```shell
+    # make install
+    ```
+    
+If you wish to uninstall the driver at a later point, use
+
+    ```shell
+    # make uninstall
+    ```    
 
 ## Building and installing using DKMS
 
@@ -22,25 +46,33 @@ from source when the kernel is upgraded (for example using your package manager)
 1. Install DKMS and other required tools
 
     ```shell
-    $ apt-get install git raspberrypi-kernel-headers build-essential dkms
+    # apt-get install git raspberrypi-kernel-headers build-essential dkms
     ```
 
 2. Add the driver to DKMS. This will copy the source to a system directory so
 that it can used to rebuild the module on kernel upgrades.
 
     ```shell
-    $ dkms add .
+    # dkms add .
     ```
 
 3. Build and install the driver.
 
     ```shell
-    $ dkms install rtl8192eu/1.0
+    # dkms install rtl8192eu/1.0
     ```
 
 If you wish to uninstall the driver at a later point, use
-_dkms uninstall rtl8192eu/1.0_. To completely remove the driver from DKMS use
-_dkms remove rtl8192eu/1.0_.
+
+    ```shell
+    # dkms uninstall rtl8192eu/1.0
+    ```
+
+To completely remove the driver from DKMS use
+
+    ```shell
+    # dkms remove rtl8192eu/1.0 --all
+    ```
 
 ## Submitting patches
 
