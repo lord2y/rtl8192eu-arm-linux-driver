@@ -62,6 +62,12 @@
 	#include <linux/tqueue.h>
 #endif
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 7, 0))
+	#include <uapi/linux/limits.h>
+#else
+	#include <linux/limits.h>
+#endif
+
 #ifdef RTK_DMP_PLATFORM
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,12))
 	#include <linux/pageremap.h>
@@ -69,10 +75,16 @@
 	#include <asm/io.h>
 #endif
 
+#ifdef CONFIG_NET_RADIO
+	#define CONFIG_WIRELESS_EXT
+#endif
+
+	/* Monitor mode */
+	#include <net/ieee80211_radiotap.h>
+	#include <linux/ieee80211.h>
 #ifdef CONFIG_IOCTL_CFG80211	
-//	#include <linux/ieee80211.h>        
-        #include <net/ieee80211_radiotap.h>
-	#include <net/cfg80211.h>	
+/*	#include <linux/ieee80211.h> */
+	#include <net/cfg80211.h>
 #endif //CONFIG_IOCTL_CFG80211
 
 #ifdef CONFIG_TCP_CSUM_OFFLOAD_TX
@@ -86,7 +98,7 @@
 
 #ifdef CONFIG_EFUSE_CONFIG_FILE
 	#include <linux/fs.h>
-#endif //CONFIG_EFUSE_CONFIG_FILE
+#endif
 
 #ifdef CONFIG_USB_HCI
 	#include <linux/usb.h>
@@ -96,6 +108,14 @@
 	#include <linux/usb/ch9.h>
 #endif
 #endif
+
+#ifdef CONFIG_BT_COEXIST_SOCKET_TRX
+	#include <net/sock.h>
+	#include <net/tcp.h>
+	#include <linux/udp.h>
+	#include <linux/in.h>
+	#include <linux/netlink.h>
+#endif //CONFIG_BT_COEXIST_SOCKET_TRX
 
 #ifdef CONFIG_USB_HCI
 	typedef struct urb *  PURB;
@@ -113,7 +133,15 @@
 #else
 	typedef struct semaphore	_mutex;
 #endif
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+	typedef struct legacy_timer_emu {
+		struct timer_list t;
+		void (*function)(unsigned long);
+		unsigned long data;
+	} _timer;
+#else
 	typedef struct timer_list _timer;
+#endif
 
 	struct	__queue	{
 		struct	list_head	queue;	
@@ -246,27 +274,46 @@ __inline static void rtw_list_delete(_list *plist)
 
 #define RTW_TIMER_HDL_ARGS void *FunctionContext
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+static void legacy_timer_emu_func(struct timer_list *t)
+{
+	struct legacy_timer_emu *lt = from_timer(lt, t, t);
+	lt->function(lt->data);
+}
+#endif
+
 __inline static void _init_timer(_timer *ptimer,_nic_hdl nic_hdl,void *pfunc,void* cntx)
 {
 	//setup_timer(ptimer, pfunc,(u32)cntx);	
 	ptimer->function = pfunc;
 	ptimer->data = (unsigned long)cntx;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+	timer_setup(&ptimer->t, legacy_timer_emu_func, 0);
+#else
 	init_timer(ptimer);
+#endif
 }
 
 __inline static void _set_timer(_timer *ptimer,u32 delay_time)
 {	
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+	mod_timer(&ptimer->t, (jiffies+(delay_time*HZ/1000)));
+#else
 	mod_timer(ptimer , (jiffies+(delay_time*HZ/1000)));	
+#endif
 }
 
 __inline static void _cancel_timer(_timer *ptimer,u8 *bcancelled)
 {
-	del_timer_sync(ptimer); 	
-	*bcancelled=  _TRUE;//TRUE ==1; FALSE==0
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+	del_timer_sync(&ptimer->t);
+#else
+	del_timer_sync(ptimer);
+#endif
+	*bcancelled = 1;
 }
 
-
-__inline static void _init_workitem(_workitem *pwork, void *pfunc, PVOID cntx)
+static inline void _init_workitem(_workitem *pwork, void *pfunc, void *cntx)
 {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,20))
 	INIT_WORK(pwork, pfunc);
@@ -353,7 +400,7 @@ static inline void rtw_netif_stop_queue(struct net_device *pnetdev)
 #endif
 }
 
-static inline void rtw_merge_string(char *dst, int dst_len, char *src1, char *src2)
+static inline void rtw_merge_string(char *dst, int dst_len, const char *src1, const char *src2)
 {
 	int	len = 0;
 	len += snprintf(dst+len, dst_len - len, "%s", src1);
