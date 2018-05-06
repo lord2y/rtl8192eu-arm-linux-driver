@@ -20,6 +20,10 @@
 #ifndef __OSDEP_SERVICE_H_
 #define __OSDEP_SERVICE_H_
 
+#include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+#include <linux/sched/signal.h>
+#endif
 
 #define _FAIL		0
 #define _SUCCESS	1
@@ -118,7 +122,8 @@ enum mstat_f {
 	MSTAT_FUNC_RX_IO = 0x03<<8,
 	MSTAT_FUNC_TX = 0x04<<8,
 	MSTAT_FUNC_RX = 0x05<<8,
-	MSTAT_FUNC_MAX = 0x06<<8,
+	MSTAT_FUNC_CFG_VENDOR = 0x06<<8,
+	MSTAT_FUNC_MAX = 0x07<<8,
 };
 
 #define mstat_tf_idx(flags) ((flags)&0xff)
@@ -252,10 +257,11 @@ void _rtw_usb_buffer_free(struct usb_device *dev, size_t size, void *addr, dma_a
 #endif /* CONFIG_USB_HCI */
 #endif /* DBG_MEM_ALLOC */
 
-extern void*	rtw_malloc2d(int h, int w, int size);
+extern void*	rtw_malloc2d(int h, int w, size_t size);
 extern void	rtw_mfree2d(void *pbuf, int h, int w, int size);
 
-extern void	_rtw_memcpy(void* dec, void* sour, u32 sz);
+extern void	_rtw_memcpy(void *dec, const void *sour, u32 sz);
+extern void _rtw_memmove(void *dst, const void *src, u32 sz);
 extern int	_rtw_memcmp(void *dst, void *src, u32 sz);
 extern void	_rtw_memset(void *pbuf, int c, u32 sz);
 
@@ -282,7 +288,8 @@ extern void	_rtw_spinunlock(_lock	*plock);
 extern void	_rtw_spinlock_ex(_lock	*plock);
 extern void	_rtw_spinunlock_ex(_lock	*plock);
 
-extern void	_rtw_init_queue(_queue	*pqueue);
+extern void	_rtw_init_queue(_queue *pqueue);
+extern void _rtw_deinit_queue(_queue *pqueue);
 extern u32	_rtw_queue_empty(_queue	*pqueue);
 extern u32	rtw_end_of_queue_search(_list *queue, _list *pelement);
 
@@ -311,14 +318,16 @@ extern void	rtw_udelay_os(int us);
 
 extern void rtw_yield_os(void);
 
-
 extern void rtw_init_timer(_timer *ptimer, void *padapter, void *pfunc);
-
 
 __inline static unsigned char _cancel_timer_ex(_timer *ptimer)
 {
 #ifdef PLATFORM_LINUX
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 15, 0))
+	return del_timer_sync(&ptimer->t);
+#else
 	return del_timer_sync(ptimer);
+#endif
 #endif
 #ifdef PLATFORM_FREEBSD
 	_cancel_timer(ptimer,0);
@@ -474,6 +483,10 @@ __inline static u32 bitshift(u32 bitmask)
 	return i;
 }
 
+#define rtw_min(a, b) ((a>b)?b:a)
+#define rtw_is_range_a_in_b(hi_a, lo_a, hi_b, lo_b) (((hi_a) <= (hi_b)) && ((lo_a) >= (lo_b)))
+#define rtw_is_range_overlap(hi_a, lo_a, hi_b, lo_b) (((hi_a) > (lo_b)) && ((lo_a) < (hi_b)))
+
 #ifndef MAC_FMT
 #define MAC_FMT "%02x:%02x:%02x:%02x:%02x:%02x"
 #endif
@@ -511,7 +524,7 @@ extern int ATOMIC_DEC_RETURN(ATOMIC_T *v);
 
 //File operation APIs, just for linux now
 extern int rtw_is_file_readable(char *path);
-extern int rtw_retrive_from_file(char *path, u8* buf, u32 sz);
+extern int rtw_retrieve_from_file(char *path, u8 *buf, u32 sz);
 extern int rtw_store_to_file(char *path, u8* buf, u32 sz);
 
 
@@ -608,6 +621,11 @@ struct rtw_cbuf *rtw_cbuf_alloc(u32 size);
 void rtw_cbuf_free(struct rtw_cbuf *cbuf);
 
 // String handler
+
+BOOLEAN IsHexDigit(char chTmp);
+BOOLEAN is_alpha(char chTmp);
+char alpha_to_upper(char c);
+
 /*
  * Write formatted output to sized buffer
  */
