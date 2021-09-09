@@ -16,7 +16,7 @@ You have two ways to install this driver:
 1. Install DKMS and other required tools
 
     ```shell
-    # apt-get install git raspberrypi-kernel-headers build-essential dkms
+    # apt-get install git raspberrypi-kernel-headers build-essential bc dkms
     ```
 
 2. Compile driver
@@ -45,7 +45,7 @@ from source when the kernel is upgraded (for example using your package manager)
 1. Install DKMS and other required tools
 
     ```shell
-    # apt-get install git raspberrypi-kernel-headers build-essential dkms
+    # apt-get install git raspberrypi-kernel-headers build-essential bc dkms
     ```
 
 2. Add the driver to DKMS. This will copy the source to a system directory so
